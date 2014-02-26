@@ -1,0 +1,106 @@
+#!/usr/bin/env python2.7
+from __future__ import print_function
+import os
+import re
+import sys
+import argparse
+import signal
+from plato.shell.findutils import find_files, Match
+import matnapack.inject_code
+from matnapack.inject_code import inject_stmt
+import fnmatch
+
+
+global TERMINATE
+TERMINATE = False
+
+
+def listen_to_signals():
+    def signal_handler(signal, frame):
+        print('Terminated by user')
+        global TERMINATE
+        TERMINATE = True
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
+
+global IGNORE
+IGNORE = []
+
+
+def matches_ignore_pattern(filepath):
+    global IGNORE
+    for pattern in IGNORE:
+        if not hasattr(pattern, 'search'):
+            pattern = re.compile(fnmatch.translate(pattern))
+        if pattern.search(filepath):
+            return True
+    return False
+
+
+def inject_into_folder(folder, recursive=False):
+    global TERMINATE
+    listen_to_signals()
+    m_files = [mfile for mfile \
+               in find_files(folder, match=Match(filetype='f'), recursive=recursive) \
+               if mfile.endswith('.m')]
+    num_of_files = len(m_files)
+    for index, filename in enumerate(m_files, start=1):
+        print('Processing [%s/%s]: %s' % (index, num_of_files, filename))
+        if matches_ignore_pattern(filename):
+            print('File matches ignore list. Skipped..')
+            continue
+        inject_stmt(filename)
+        if TERMINATE:
+            break
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser('MATLAB namespace packer')
+    parser.add_argument('--folder-path', dest="folder_path",
+                        help="Recursively process path")
+    parser.add_argument('--namespace', dest="namespace",
+                        help="A namespace to inject into file(s)")
+    parser.add_argument('-f', '--file-path', dest="file_path",
+                        help="A file to inject CMT into")
+    parser.add_argument('-d', '--dry-run', action='store_true',
+                        default=False, help='DRY_RUN mode ("off" by '
+                        'default)')
+    parser.add_argument('-i', '--ignore',
+                        help='list of FNMATCH or REGEXP patterns matching '
+                        'files to ignore')
+    args = parser.parse_args()
+
+    if not args.namespace:
+        print('Missing namespace.')
+        exit()
+
+    if args.dry_run:
+        matnapack.inject_code.DRY_RUN = args.dry_run
+
+    if args.ignore:
+        ignore_file = args.ignore
+        if not os.path.exists(ignore_file):
+            raise IOError('File not found: ' + ignore_file)
+    else:
+        ignore_file = os.path.join(os.getcwd(), '.cmt_inject_ignore')
+        if not os.path.exists(ignore_file):
+            ignore_file = None
+    if ignore_file:
+        IGNORE = [line.strip() for line in open(ignore_file).readlines()
+                  if not re.match('^\#', line)]
+
+    if args.folder_path:
+        if not os.path.exists(args.folder_path):
+            print('Path not found: %s' % args.folder_path, file=sys.stderr)
+        inject_into_folder(args.folder_path, recursive=False)
+        exit()
+
+    elif args.file_path:
+        if not os.path.exists(args.file_path):
+            print('Path not found: %s' % args.file_path, file=sys.stderr)
+        inject_stmt(args.file_path)
+        exit()
+
+    print('Nothing to do.', file=sys.stderr)
+    parser.print_help()
