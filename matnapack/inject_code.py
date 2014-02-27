@@ -62,17 +62,19 @@ class FuncDeclarationSplitter(object):
     def split(self):
         result = ['']
         lines = self.text.split('\n')
-        for line in lines:
-            if has_a_comment(line):
-                continue
-            first_line_wo_comment = self.strip_whitespaces(line)
-            break
-        if not self.declares_function(self.strip_whitespaces(first_line_wo_comment)):
-            print('First line w/o comment does not declare a function! \n"%s"' %
-                  first_line_wo_comment)
-            return result
+        # for line in lines:
+        #     if has_a_comment(line) or len(self.strip_whitespaces(line)) == 0:
+        #         continue
+        #     first_line_wo_comment = self.strip_whitespaces(line)
+        #     break
+        # if not self.declares_function(self.strip_whitespaces(first_line_wo_comment)):
+        #     print('First line w/o comment does not declare a function! \n"%s"' %
+        #           first_line_wo_comment)
+        #     return result
         body = ''
         for line in lines:
+            if has_a_comment(line) or len(self.strip_whitespaces(line)) == 0:
+                continue
             stripped_line = self.strip_whitespaces(line)
             if self.declares_function(stripped_line):
                 print('Found declaration: ' + line)
@@ -195,7 +197,7 @@ def inject_stmt_into_function(file_path, statement):
             declaration['header'], declaration['body'], statement)
     if len(new_text) > 0:
         # Use opportunity to get rid of nasty \r
-        new_text  = new_text.replace('\r', '')
+        ##new_text  = new_text.replace('\r', '')
         if DRY_RUN:
             print('Will overwrite %s with:' % file_path)
             print(new_text)

@@ -38,7 +38,7 @@ def matches_ignore_pattern(filepath):
     return False
 
 
-def inject_into_folder(folder, recursive=False):
+def inject_into_folder(folder, statement, recursive=False):
     global TERMINATE
     listen_to_signals()
     m_files = [mfile for mfile \
@@ -50,7 +50,7 @@ def inject_into_folder(folder, recursive=False):
         if matches_ignore_pattern(filename):
             print('File matches ignore list. Skipped..')
             continue
-        inject_stmt(filename)
+        inject_stmt(filename, statement)
         if TERMINATE:
             break
 
