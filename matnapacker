@@ -59,7 +59,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('MATLAB namespace packer')
     parser.add_argument('--folder-path', dest="folder_path",
                         help="Recursively process path")
-    parser.add_argument('--namespace', dest="namespace",
+    parser.add_argument('--namespace', dest="namespace", required=True,
                         help="A namespace to inject into file(s)")
     parser.add_argument('-f', '--file-path', dest="file_path",
                         help="A file to inject CMT into")
@@ -71,9 +71,9 @@ if __name__ == '__main__':
                         'files to ignore')
     args = parser.parse_args()
 
-    if not args.namespace:
-        print('Missing namespace.')
-        exit()
+    # Build an import statement for pulling old (global) identifiers from the
+    # newly formed package.
+    statement = 'import %s.*;' % args.namespace
 
     if args.dry_run:
         matnapack.inject_code.DRY_RUN = args.dry_run
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     elif args.file_path:
         if not os.path.exists(args.file_path):
             print('Path not found: %s' % args.file_path, file=sys.stderr)
-        inject_stmt(args.file_path)
+        inject_stmt(args.file_path, statement)
         exit()
 
     print('Nothing to do.', file=sys.stderr)
