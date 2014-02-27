@@ -93,7 +93,7 @@ if __name__ == '__main__':
     if args.folder_path:
         if not os.path.exists(args.folder_path):
             print('Path not found: %s' % args.folder_path, file=sys.stderr)
-        inject_into_folder(args.folder_path, recursive=False)
+        inject_into_folder(args.folder_path, recursive=False, statement=statement)
         exit()
 
     elif args.file_path:
