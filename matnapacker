@@ -5,7 +5,7 @@ import re
 import sys
 import argparse
 import signal
-from plato.shell.findutils import find_files, Match
+from findtools.find_files import (find_files, Match)
 import matnapack.inject_code
 from matnapack.inject_code import inject_stmt
 import fnmatch
